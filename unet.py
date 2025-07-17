@@ -26,6 +26,7 @@ class UNet2D(nn.Module):
         self.encoder_layers = nn.Sequential(*encoder_layers)
         self.center = Center2D(conv_depths[-2], conv_depths[-1], conv_depths[-1], conv_depths[-2])
         self.decoder_layers = nn.Sequential(*decoder_layers)
+        self.activation = nn.Sigmoid()
 
     def forward(self, x, return_all=False):
         x_enc = [x]
@@ -42,7 +43,7 @@ class UNet2D(nn.Module):
             x_dec.append(dec_layer(x_cat))
 
         if not return_all:
-            return x_dec[-1]
+            return self.activation(x_dec[-1])
         else:
             return x_enc + x_dec
 
