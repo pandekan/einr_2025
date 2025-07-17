@@ -2,6 +2,7 @@ import torch
 from torch.utils.data import Dataset
 import numpy as np
 import os
+import nibabel as nib
 from glob import glob
 from torchvision.transforms import ToTensor
 
@@ -49,6 +50,51 @@ class PETSliceDataset(Dataset):
         tracer2 = torch.tensor(tracer2).unsqueeze(0)
 
         return tracer1, tracer2
+
+
+def extract_slices(img_list, mask_img, output_path):
+    if len(img_list) == 0:
+        raise ValueError(f"No images found in the provided list for {output_path}.")
+
+    mask_data = mask_img.get_fdata().astype(bool)
+
+    example_img = img_list[0]
+    if hasattr(example_img, 'get_fdata'):
+        example_data = example_img.get_fdata()
+    else:
+        example_data = example_img
+
+    height, width = example_data.shape[:2]
+    num_subjects = len(img_list)
+
+    newy = np.zeros((height, width, num_subjects), dtype=np.float32)
+    slices_list = []
+
+    for i, img in enumerate(img_list):
+        if hasattr(img, 'get_fdata'):
+            vol = img.get_fdata()
+            vol = np.nan_to_num(vol, nan=0.0, posinf=0.0, neginf=0.0)  # <-- Added here
+        else:
+            vol = img
+
+        vol_masked = vol * mask_data
+
+        print(f"vol min: {np.nanmin(vol)}, max: {np.nanmax(vol)}")
+        print(f"mask min: {np.nanmin(mask_data)}, max: {np.nanmax(mask_data)}")
+        print(f"vol_masked min: {np.nanmin(vol_masked)}, max: {np.nanmax(vol_masked)}")
+
+        mid_slice = vol_masked.shape[2] // 2
+        slice_2d = vol_masked[:, :, mid_slice]
+        newy[:, :, i] = slice_2d
+        slices_list.append(slice_2d)
+        print(f"Processed masked image {i + 1} / {num_subjects}")
+
+    affine = mask_img.affine
+    output_nii = nib.Nifti1Image(newy, affine)
+    nib.save(output_nii, output_path)
+    print(f"\n✅ Done! Saved masked combined slices to: {output_path}\n")
+
+    return slices_list
 
 
 class PETDataset(Dataset):
