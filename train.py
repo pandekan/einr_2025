@@ -11,6 +11,9 @@ from model import PET2PETModule
 import pytorch_lightning as pl
 from pytorch_lightning.callbacks import ModelCheckpoint
 from glob import glob
+import logging
+
+logger = logging.getLogger(__name__)
 
 # prepare validation data
 base_dir = "/home/jagust/head_ml/train"
@@ -38,14 +41,14 @@ for patient_dir in patient_dirs:
             mk_scans.append(mk_img)
             ftp_scans.append(ftp_img)
 
-            print(f"✅ Loaded MK & FTP for patient: {os.path.basename(patient_dir)}")
+            logger.info(f"✅ Loaded MK & FTP for patient: {os.path.basename(patient_dir)}")
         except Exception as e:
-            print(f"❌ Error loading patient {os.path.basename(patient_dir)}: {e}")
+            logger.error(f"❌ Error loading patient {os.path.basename(patient_dir)}: {e}")
 
     if len(mk_scans) >= 25:
         break
 
-print(f"\n🎯 Loaded {len(mk_scans)} matched MK & FTP scans.")
+logger.info(f"\n🎯 Loaded {len(mk_scans)} matched MK & FTP scans.")
 
 # prepare training and validation data
 val_base_dir = "/home/jagust/head_ml/validate"
@@ -73,14 +76,14 @@ for patient_dir in val_patient_dirs:
             mk_val_scans.append(mk_img)
             ftp_val_scans.append(ftp_img)
 
-            print(f"✅ Loaded MK & FTP for val patient: {os.path.basename(patient_dir)}")
+            logger.info(f"✅ Loaded MK & FTP for val patient: {os.path.basename(patient_dir)}")
         except Exception as e:
-            print(f"❌ Failed to load val patient {os.path.basename(patient_dir)}: {e}")
+            logger.error(f"❌ Failed to load val patient {os.path.basename(patient_dir)}: {e}")
 
     if len(mk_val_scans) >= 15:
         break
 
-print(f"\n🎯 Loaded {len(mk_val_scans)} matched validation MK & FTP scans.\n")
+logger.info(f"\n🎯 Loaded {len(mk_val_scans)} matched validation MK & FTP scans.\n")
 
 mask_img = nib.load("/home/jagust/head_ml/MNI_wholeCortex.nii")
 
@@ -117,6 +120,6 @@ trainer = pl.Trainer(
     
 )
 
-print("🟢 Starting training...")
+logger.info("🟢 Starting training...")
 trainer.fit(model, train_loader, val_loader)
-print("✅ Training finished.")
+logger.info("✅ Training finished.")
