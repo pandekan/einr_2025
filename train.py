@@ -111,7 +111,7 @@ model = PET2PETModule(lr=1e-3)
 
 trainer = pl.Trainer(
     max_epochs=10,
-    accelerator="cpu",  # or "gpu" if available
+    accelerator="gpu",  # or "gpu" if available
     devices=1,
     log_every_n_steps=1,
     precision=32,
